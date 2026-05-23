@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColorVault — Галерея цветов</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--bg2:#0e0e18;--bg3:#13131a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#e2e2ec;--text2:#6a6a7a;--text3:#3a3a4e;
+  --accent:#6366f1;--accent-l:#818cf8;--accent-m:rgba(99,102,241,0.15);
+}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:10px}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 40% at 50% -10%,rgba(99,102,241,0.12) 0%,transparent 60%)}
+.wrapper{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1}
+
+/* HEADER */
+header{height:58px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100;background:rgba(8,8,16,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.logo{display:flex;align-items:center;gap:10px;flex:1}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(99,102,241,0.4);flex-shrink:0}
+.logo-text{font-size:17px;font-weight:700;letter-spacing:-0.5px}
+.logo-text span{color:var(--accent-l)}
+.header-right{display:flex;align-items:center;gap:10px}
+.filter-tag{display:flex;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.28);border-radius:20px;padding:4px 10px 4px 8px;color:#a5b4fc;font-size:12px;font-weight:500}
+.filter-tag .dot{width:9px;height:9px;border-radius:50%}
+.filter-tag button{background:none;border:none;cursor:pointer;color:var(--accent-l);padding:0 0 0 2px;font-size:13px;line-height:1}
+.counter{font-size:13px;color:var(--text3);font-weight:500}
+.btn-toggle{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:6px 10px;color:#5A5A6B;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;transition:all .2s;font-family:inherit}
+.btn-toggle.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:var(--accent-l)}
+.btn-toggle:hover{background:rgba(255,255,255,0.07)}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;min-height:calc(100vh - 58px)}
+
+/* SIDEBAR */
+aside{width:210px;flex-shrink:0;border-right:1px solid var(--border);background:rgba(255,255,255,0.01);overflow:hidden;transition:width .3s cubic-bezier(.4,0,.2,1)}
+aside.closed{width:0}
+.sidebar-inner{width:210px;padding:18px 12px 24px;opacity:1;transition:opacity .2s;height:100%;overflow-y:auto}
+aside.closed .sidebar-inner{opacity:0;pointer-events:none}
+.sidebar-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin:0 4px 8px;display:block}
+.filter-btn{width:100%;display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-weight:400;margin-bottom:1px;transition:all .12s ease;text-align:left;font-family:inherit}
+.filter-btn:hover:not(.empty){background:rgba(255,255,255,0.03)}
+.filter-btn.active{background:rgba(99,102,241,0.1);outline:1px solid rgba(99,102,241,0.22);color:#d0d0e8;font-weight:500}
+.filter-btn.empty{opacity:.2;cursor:default}
+.filter-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;transition:box-shadow .2s}
+.filter-count{margin-left:auto;font-size:10px;opacity:.4;font-weight:400;font-variant-numeric:tabular-nums}
+.sidebar-divider{margin:16px 4px 12px;height:1px;background:var(--border)}
+.btn-clear{width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;border:none;background:transparent;color:#4a2030;cursor:pointer;font-size:12px;transition:all .15s;text-align:left;font-family:inherit}
+.btn-clear:hover{color:#ef4444;background:rgba(239,68,68,0.05)}
+
+/* MAIN */
+main{flex:1;padding:18px;min-width:0;overflow-y:auto}
+
+/* DROPZONE */
+.dropzone{border:2px dashed rgba(255,255,255,0.07);border-radius:20px;padding:80px 40px;text-align:center;cursor:pointer;background:radial-gradient(ellipse at center,rgba(99,102,241,0.04) 0%,transparent 70%);transition:all .25s ease;position:relative}
+.dropzone.drag{border-color:var(--accent);background:rgba(99,102,241,0.06)}
+.dropzone-icon{width:80px;height:80px;border-radius:50%;background:rgba(99,102,241,0.1);margin:0 auto 24px;display:flex;align-items:center;justify-content:center;transition:all .25s;font-size:36px}
+.dropzone.drag .dropzone-icon{background:rgba(99,102,241,0.22);box-shadow:0 0 40px rgba(99,102,241,0.3)}
+.dropzone h2{color:var(--text);font-size:20px;font-weight:700;margin-bottom:10px;letter-spacing:-.3px}
+.dropzone p{color:var(--text3);font-size:14px;margin-bottom:28px}
+.btn-choose{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.35);border-radius:10px;padding:10px 24px;color:var(--accent-l);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-choose:hover{background:rgba(99,102,241,0.22);box-shadow:0 0 20px rgba(99,102,241,0.2)}
+.dropzone-hint{margin-top:20px;font-size:12px;color:#2a2a3a}
+.dz-compact{border:1.5px dashed rgba(255,255,255,0.07);border-radius:10px;padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:rgba(255,255,255,0.02);color:#4a4a5a;font-size:13px;font-weight:500;transition:all .2s;margin-bottom:14px;font-family:inherit;width:100%;border-bottom-color:rgba(255,255,255,0.07)}
+.dz-compact:hover{border-color:rgba(99,102,241,0.3);color:var(--accent-l);background:rgba(99,102,241,0.05)}
+
+/* GALLERY */
+.gallery{columns:4 170px;column-gap:12px;transition:opacity .12s ease}
+.gallery.fade{opacity:0}
+
+/* CARD */
+.card{position:relative;border-radius:12px;overflow:hidden;background:var(--bg3);margin-bottom:12px;break-inside:avoid;display:inline-block;width:100%;transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease;box-shadow:0 2px 10px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,0.03);animation:fadeInUp .3s ease both}
+.card:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,0.07)}
+.card img{width:100%;display:block;object-fit:cover}
+.card-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.72);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:3px 8px 3px 5px;display:flex;align-items:center;gap:5px;opacity:0;transition:opacity .2s;backdrop-filter:blur(6px)}
+.card:hover .card-badge{opacity:1}
+.card-badge-dot{width:8px;height:8px;border-radius:50%}
+.card-badge span{font-size:10px;color:rgba(255,255,255,0.7);font-family:monospace}
+.card-remove{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s,transform .2s;transform:scale(.7);font-size:13px;line-height:1}
+.card:hover .card-remove{opacity:1;transform:scale(1)}
+.card-remove:hover{background:rgba(239,68,68,0.8)}
+.card-palette{position:absolute;bottom:0;left:0;right:0;padding:28px 12px 12px;background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.5) 60%,transparent 100%);transform:translateY(110%);transition:transform .28s cubic-bezier(.34,1.2,.64,1)}
+.card:hover .card-palette{transform:translateY(0)}
+.palette-dots{display:flex;align-items:center;gap:5px}
+.palette-dot{border-radius:50%;border:1.5px solid rgba(255,255,255,0.22);box-shadow:0 2px 8px rgba(0,0,0,.5);flex-shrink:0;cursor:default;transition:transform .15s}
+.palette-dot:hover{transform:scale(1.25)}
+.palette-hex{margin-left:4px;font-size:10px;color:rgba(255,255,255,0.45);font-family:monospace;letter-spacing:.02em}
+
+/* SKELETON */
+.skeleton{border-radius:12px;background:var(--bg3);margin-bottom:12px;break-inside:avoid;display:inline-block;width:100%;position:relative;overflow:hidden}
+.skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.04) 50%,transparent 100%);animation:shimmer 1.5s infinite;background-size:200% 100%}
+
+/* EMPTY */
+.empty{text-align:center;padding:80px 40px;animation:fadeInUp .3s ease}
+.empty-icon{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.03);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.empty h3{font-size:16px;color:#4a4a5a;margin-bottom:6px;font-weight:500}
+.empty p{font-size:13px;color:var(--text3);margin-bottom:20px}
+.btn-reset{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.28);border-radius:9px;padding:8px 20px;color:var(--accent-l);cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;font-family:inherit}
+.btn-reset:hover{background:rgba(99,102,241,0.2)}
+
+/* STATUSBAR */
+.statusbar{border-top:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:16px;font-size:11px;color:var(--text3);background:rgba(8,8,16,0.8);position:sticky;bottom:0;z-index:50}
+.statusbar .ml-auto{margin-left:auto}
+
+/* TOAST */
+.toast-ct{position:fixed;bottom:48px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#1a1a2a;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;animation:toastIn .25s ease;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:280px}
+.toast.success{border-color:rgba(34,197,94,0.3)}
+.toast.error{border-color:rgba(239,68,68,0.3)}
+
+/* LOADING */
+.loading-ov{position:fixed;inset:0;background:rgba(8,8,16,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:16px;backdrop-filter:blur(4px)}
+.loading-ov.hidden{display:none}
+.spinner{width:40px;height:40px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.loading-ov p{color:var(--text2);font-size:14px}
+
+/* UPLOAD PROGRESS BAR */
+.progress-bar-wrap{height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-bottom:14px}
+.progress-bar{height:100%;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:2px;transition:width .3s ease;width:0}
+
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<div class="loading-ov" id="loadOv">
+  <div class="spinner"></div>
+  <p id="loadMsg">Загрузка галереи из облака...</p>
+</div>
+
+<div class="toast-ct" id="toastCt"></div>
+
+<div class="wrapper">
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="13.5" cy="6.5" r="3.5"/><circle cx="6.5" cy="17.5" r="3.5"/><circle cx="17.5" cy="17.5" r="3.5"/>
+        </svg>
+      </div>
+      <div class="logo-text">Color<span>Vault</span></div>
+    </div>
+    <div class="header-right">
+      <div class="filter-tag" id="filterTag" style="display:none">
+        <div class="dot" id="ftDot"></div>
+        <span id="ftLabel"></span>
+        <button onclick="clearFilter()">✕</button>
+      </div>
+      <span class="counter" id="counterTxt">0 фото</span>
+      <button class="btn-toggle active" id="sbToggle" onclick="toggleSidebar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="18" rx="1"/><path d="M14 9h7M14 15h7M14 3h7"/>
+        </svg>
+        Фильтры
+      </button>
+    </div>
+  </header>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="sidebar-inner">
+        <span class="sidebar-label">Показать</span>
+        <button class="filter-btn active" id="btnAll" onclick="setFilter(null)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span style="flex:1">Все фото</span>
+          <span class="filter-count" id="cntAll">0</span>
+        </button>
+
+        <div style="height:14px"></div>
+        <span class="sidebar-label">Цвет</span>
+        <div id="filterBtns"></div>
+
+        <div class="sidebar-divider" id="clrDiv" style="display:none"></div>
+        <button class="btn-clear" id="btnClear" style="display:none" onclick="clearAll()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+          Очистить галерею
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main id="mainArea">
+      <!-- Full drop zone -->
+      <div id="dzFull">
+        <div class="dropzone" id="dz"
+          ondragover="onDrag(event,true)"
+          ondragleave="onDrag(event,false)"
+          ondrop="onDrop(event)"
+          onclick="fileInp.click()">
+          <div class="dropzone-icon">📂</div>
+          <h2 id="dzTitle">Перетащите изображения сюда</h2>
+          <p>PNG, JPG, WEBP, GIF · Несколько файлов одновременно</p>
+          <button class="btn-choose" onclick="event.stopPropagation();fileInp.click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Выбрать файлы
+          </button>
+          <p class="dropzone-hint">☁️ Изображения сохраняются в Supabase — не исчезнут после очистки кэша</p>
+        </div>
+      </div>
+
+      <!-- Gallery section -->
+      <div id="gallerySec" style="display:none">
+        <button class="dz-compact"
+          ondragover="onDrag(event,true)"
+          ondragleave="onDrag(event,false)"
+          ondrop="onDrop(event)"
+          onclick="fileInp.click()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Добавить ещё фото
+        </button>
+
+        <!-- Progress bar (during upload) -->
+        <div class="progress-bar-wrap" id="progWrap" style="display:none">
+          <div class="progress-bar" id="progBar"></div>
+        </div>
+
+        <!-- Empty filter -->
+        <div class="empty" id="emptyFilter" style="display:none">
+          <div class="empty-icon">🎨</div>
+          <h3>Нет изображений с таким цветом</h3>
+          <p>Попробуйте другой фильтр</p>
+          <button class="btn-reset" onclick="clearFilter()">Показать все фото</button>
+        </div>
+
+        <!-- Gallery grid -->
+        <div class="gallery" id="gallery"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar" id="statusbar" style="display:none">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2">
+      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+    </svg>
+    <span id="statusTxt">Цвета извлечены</span>
+    <span class="ml-auto" id="statusGrp"></span>
+  </div>
+</div>
+
+<input type="file" id="fileInp" multiple accept="image/*" style="display:none" onchange="handleFiles(this.files)">
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// ════════════════════════════════════════
+//  КОНФИГ
+// ════════════════════════════════════════
+const SB_URL  = 'https://lgjcavwwrptsklspxios.supabase.co';
+const SB_KEY  = 'sb_publishable_xzs_BzAq97xfkL517GBGNQ_l_xsinCo';
+const BUCKET  = 'colorvault';
+
+const db = window.supabase.createClient(SB_URL, SB_KEY);
+
+// ════════════════════════════════════════
+//  ЦВЕТА
+// ════════════════════════════════════════
+const FILTERS = [
+  {id:'red',    label:'Красный',    color:'#ef4444',glow:'255,68,68'},
+  {id:'orange', label:'Оранжевый',  color:'#f97316',glow:'249,115,22'},
+  {id:'yellow', label:'Жёлтый',     color:'#eab308',glow:'234,179,8'},
+  {id:'green',  label:'Зелёный',    color:'#22c55e',glow:'34,197,94'},
+  {id:'cyan',   label:'Голубой',    color:'#06b6d4',glow:'6,182,212'},
+  {id:'blue',   label:'Синий',      color:'#3b82f6',glow:'59,130,246'},
+  {id:'purple', label:'Фиолетовый', color:'#a855f7',glow:'168,85,247'},
+  {id:'pink',   label:'Розовый',    color:'#ec4899',glow:'236,72,153'},
+  {id:'brown',  label:'Коричневый', color:'#a16207',glow:'161,98,7'},
+  {id:'dark',   label:'Тёмный',     color:'#475569',glow:'71,85,105'},
+  {id:'light',  label:'Светлый',    color:'#cbd5e1',glow:'203,213,225'},
+  {id:'neutral',label:'Серый',      color:'#94a3b8',glow:'148,163,184'},
+];
+const CAT = Object.fromEntries(FILTERS.map(f=>[f.id,f.label]));
+
+// ════════════════════════════════════════
+//  СОСТОЯНИЕ
+// ════════════════════════════════════════
+let allImages   = [];
+let activeFilter = null;
+let sbOpen      = true;
+
+// ════════════════════════════════════════
+//  АНАЛИЗ ЦВЕТА (Canvas)
+// ════════════════════════════════════════
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  const l=(max+min)/2;
+  if(max===min)return[0,0,l*100];
+  const d=max-min;
+  const s=l>.5?d/(2-max-min):d/(max+min);
+  let h;
+  if(max===r)h=((g-b)/d+(g<b?6:0))/6;
+  else if(max===g)h=((b-r)/d+2)/6;
+  else h=((r-g)/d+4)/6;
+  return[h*360,s*100,l*100];
+}
+function classifyPixel(h,s,l){
+  if(l<18)return'dark';
+  if(l>88)return'light';
+  if(s<12)return l>55?'light':l<35?'dark':'neutral';
+  if(h>=12&&h<=52&&s>=18&&s<=72&&l>=12&&l<=50)return'brown';
+  if(h>=345||h<12)return'red';
+  if(h>=12&&h<44)return'orange';
+  if(h>=44&&h<72)return'yellow';
+  if(h>=72&&h<165)return'green';
+  if(h>=165&&h<200)return'cyan';
+  if(h>=200&&h<262)return'blue';
+  if(h>=262&&h<312)return'purple';
+  if(h>=312&&h<345)return'pink';
+  return'neutral';
+}
+function analyzeImg(imgEl){
+  const c=document.createElement('canvas');
+  c.width=c.height=160;
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(imgEl,0,0,160,160);
+  const {data}=ctx.getImageData(0,0,160,160);
+  const cnt={},sms={};
+  for(let i=0;i<data.length;i+=16){
+    const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
+    if(a<100)continue;
+    const [h,s,l]=rgbToHsl(r,g,b);
+    const cat=classifyPixel(h,s,l);
+    cnt[cat]=(cnt[cat]||0)+1;
+    if(!sms[cat])sms[cat]=[0,0,0,0];
+    sms[cat][0]+=r;sms[cat][1]+=g;sms[cat][2]+=b;sms[cat][3]++;
+  }
+  const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+  const palette=sorted.slice(0,6).map(([cat])=>{
+    const [sr,sg,sb,n]=sms[cat];
+    const r=Math.round(sr/n),g=Math.round(sg/n),b=Math.round(sb/n);
+    return{category:cat,hex:`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`};
+  });
+  return{dominant:sorted[0]?.[0]||'neutral',palette,categories:sorted.map(([c])=>c)};
+}
+
+// ════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════
+function toast(msg,type='info',emoji=''){
+  const ct=document.getElementById('toastCt');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.textContent=`${emoji} ${msg}`;
+  ct.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3200);
+}
+
+// ════════════════════════════════════════
+//  SUPABASE: Загрузить все изображения
+// ════════════════════════════════════════
+async function loadImages(){
+  try{
+    const {data,error}=await db.from('images').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    allImages=data||[];
+    renderGallery();
+    updateUI();
+  }catch(e){
+    toast('Ошибка загрузки: '+e.message,'error','❌');
+    console.error(e);
+    allImages=[];
+    renderGallery();
+  }finally{
+    document.getElementById('loadOv').classList.add('hidden');
+  }
+}
+
+// ════════════════════════════════════════
+//  SUPABASE: Загрузить один файл
+// ════════════════════════════════════════
+async function uploadOne(file){
+  // 1. Анализ цвета локально (нет CORS)
+  const localUrl=URL.createObjectURL(file);
+  const analysis=await new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{res(analyzeImg(img));URL.revokeObjectURL(localUrl);};
+    img.onerror=rej;
+    img.src=localUrl;
+  });
+
+  // 2. Уникальное имя
+  const ext=file.name.split('.').pop().toLowerCase();
+  const path=`${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+  // 3. Загрузка в Storage
+  const {error:upErr}=await db.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false});
+  if(upErr)throw upErr;
+
+  // 4. Публичный URL
+  const {data:{publicUrl}}=db.storage.from(BUCKET).getPublicUrl(path);
+
+  // 5. Запись в таблицу
+  const {data,error:dbErr}=await db.from('images').insert({
+    name:file.name,
+    storage_path:path,
+    url:publicUrl,
+    dominant:analysis.dominant,
+    palette:analysis.palette,
+    categories:analysis.categories,
+  }).select().single();
+  if(dbErr)throw dbErr;
+  return data;
+}
+
+// ════════════════════════════════════════
+//  SUPABASE: Удалить изображение
+// ════════════════════════════════════════
+async function deleteOne(id,storagePath){
+  if(storagePath){
+    const {error}=await db.storage.from(BUCKET).remove([storagePath]);
+    if(error)console.warn('Storage delete:',error.message);
+  }
+  const {error}=await db.from('images').delete().eq('id',id);
+  if(error)throw error;
+}
+
+// ════════════════════════════════════════
+//  DRAG & DROP
+// ════════════════════════════════════════
+function onDrag(e,on){
+  e.preventDefault();
+  const dz=document.getElementById('dz');
+  if(dz){
+    dz.classList.toggle('drag',on);
+    document.getElementById('dzTitle').textContent=on?'Отпустите для загрузки':'Перетащите изображения сюда';
+  }
+}
+function onDrop(e){
+  e.preventDefault();
+  const dz=document.getElementById('dz');
+  if(dz){dz.classList.remove('drag');document.getElementById('dzTitle').textContent='Перетащите изображения сюда';}
+  handleFiles(e.dataTransfer.files);
+}
+
+async function handleFiles(fileList){
+  const files=Array.from(fileList).filter(f=>f.type.startsWith('image/'));
+  if(!files.length)return;
+
+  // Показываем прогресс-бар
+  const pw=document.getElementById('progWrap');
+  const pb=document.getElementById('progBar');
+  pw.style.display='block';
+  pb.style.width='0%';
+
+  showGallerySec();
+
+  // Добавляем скелетоны
+  const gallery=document.getElementById('gallery');
+  const skIds=files.map((_,i)=>{
+    const sk=document.createElement('div');
+    sk.className='skeleton';
+    sk.style.height=(160+(i%3)*60)+'px';
+    sk.id='sk'+Date.now()+i;
+    gallery.prepend(sk);
+    return sk.id;
+  });
+
+  let done=0,ok=0;
+  for(let i=0;i<files.length;i++){
+    try{
+      const saved=await uploadOne(files[i]);
+      allImages.unshift(saved);
+      ok++;
+      document.getElementById(skIds[i])?.remove();
+      const card=makeCard(saved);
+      gallery.prepend(card);
+      updateUI();
+    }catch(e){
+      console.error(e);
+      document.getElementById(skIds[i])?.remove();
+      toast('Ошибка загрузки "'+files[i].name+'": '+e.message,'error','❌');
+    }
+    done++;
+    pb.style.width=Math.round(done/files.length*100)+'%';
+  }
+
+  setTimeout(()=>{pw.style.display='none';pb.style.width='0%';},600);
+  if(ok>0)toast(ok+' фото сохранено в облаке','success','✅');
+  updateUI();
+}
+
+// ════════════════════════════════════════
+//  РЕНДЕР ГАЛЕРЕИ
+// ════════════════════════════════════════
+function getFiltered(){
+  if(!activeFilter)return allImages;
+  return allImages.filter(img=>img.categories&&img.categories.includes(activeFilter));
+}
+
+function renderGallery(){
+  showGallerySec();
+  const gallery=document.getElementById('gallery');
+  gallery.innerHTML='';
+  const imgs=getFiltered();
+  document.getElementById('emptyFilter').style.display=(activeFilter&&imgs.length===0)?'block':'none';
+  imgs.forEach((img,idx)=>{
+    const card=makeCard(img);
+    card.style.animationDelay=Math.min(idx*25,250)+'ms';
+    gallery.appendChild(card);
+  });
+}
+
+function showGallerySec(){
+  const has=allImages.length>0;
+  document.getElementById('dzFull').style.display=has?'none':'block';
+  document.getElementById('gallerySec').style.display=has?'block':'none';
+  document.getElementById('statusbar').style.display=has?'flex':'none';
+}
+
+function makeCard(img){
+  const div=document.createElement('div');
+  div.className='card';
+  div.dataset.id=img.id;
+  const palette=Array.isArray(img.palette)?img.palette:[];
+  const domColor=palette[0]?.hex||'#888';
+  const domLabel=CAT[img.dominant]||img.dominant||'?';
+
+  const dotsHtml=palette.slice(0,5).map((p,i)=>{
+    const sz=i===0?24:18;
+    return `<div class="palette-dot" style="width:${sz}px;height:${sz}px;background:${p.hex}" title="${CAT[p.category]||p.category}: ${p.hex}"></div>`;
+  }).join('');
+
+  // Экранируем путь хранилища для атрибута
+  const sp=(img.storage_path||'').replace(/'/g,"\\'");
+
+  div.innerHTML=`
+    <img src="${img.url}" alt="${img.name}" loading="lazy">
+    <div class="card-badge">
+      <div class="card-badge-dot" style="background:${domColor}"></div>
+      <span>${domLabel}</span>
+    </div>
+    <button class="card-remove" onclick="removeCard('${img.id}','${sp}',this)" title="Удалить">✕</button>
+    <div class="card-palette">
+      <div class="palette-dots">
+        ${dotsHtml}
+        <span class="palette-hex">${domColor}</span>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+async function removeCard(id,storagePath,btn){
+  btn.textContent='⏳';
+  btn.disabled=true;
+  try{
+    await deleteOne(id,storagePath);
+    allImages=allImages.filter(i=>i.id!==id);
+    document.querySelector(`.card[data-id="${id}"]`)?.remove();
+    updateUI();
+    showGallerySec();
+    toast('Фото удалено','success','🗑️');
+  }catch(e){
+    toast('Ошибка удаления: '+e.message,'error','❌');
+    btn.textContent='✕';
+    btn.disabled=false;
+  }
+}
+
+// ════════════════════════════════════════
+//  ФИЛЬТРЫ & САЙДБАР
+// ════════════════════════════════════════
+function initFilterBtns(){
+  const ct=document.getElementById('filterBtns');
+  FILTERS.forEach(f=>{
+    const btn=document.createElement('button');
+    btn.className='filter-btn';
+    btn.id='fb_'+f.id;
+    btn.onclick=()=>setFilter(f.id);
+    btn.innerHTML=`
+      <div class="filter-dot" id="fd_${f.id}" style="background:${f.color}"></div>
+      <span style="flex:1">${f.label}</span>
+      <span class="filter-count" id="cnt_${f.id}"></span>
+    `;
+    ct.appendChild(btn);
+  });
+}
+
+function updateUI(){
+  const total=allImages.length;
+  document.getElementById('cntAll').textContent=total;
+  document.getElementById('counterTxt').textContent=
+    activeFilter?`${getFiltered().length} из ${total}`:`${total} фото`;
+  document.getElementById('statusTxt').textContent=`Цвета извлечены из ${total} изображений`;
+  const groups=FILTERS.filter(f=>allImages.some(img=>img.categories?.includes(f.id))).length;
+  document.getElementById('statusGrp').textContent=groups+' цветовых групп';
+
+  FILTERS.forEach(f=>{
+    const count=allImages.filter(img=>img.categories?.includes(f.id)).length;
+    const cntEl=document.getElementById('cnt_'+f.id);
+    if(cntEl)cntEl.textContent=count>0?count:'';
+    const btn=document.getElementById('fb_'+f.id);
+    if(btn){
+      btn.classList.toggle('empty',count===0);
+      btn.classList.toggle('active',activeFilter===f.id);
+      // Подсветка активной точки
+      const dot=document.getElementById('fd_'+f.id);
+      if(dot){
+        const fi=FILTERS.find(x=>x.id===f.id);
+        dot.style.boxShadow=activeFilter===f.id
+          ?`0 0 0 3px rgba(${fi.glow},.2),0 0 8px rgba(${fi.glow},.4)`:'none';
+      }
+    }
+  });
+
+  document.getElementById('btnAll').classList.toggle('active',activeFilter===null);
+  const show=total>0;
+  document.getElementById('clrDiv').style.display=show?'block':'none';
+  document.getElementById('btnClear').style.display=show?'flex':'none';
+}
+
+function setFilter(id){
+  if(id!==null&&!allImages.some(img=>img.categories?.includes(id)))return;
+  if(activeFilter===id){clearFilter();return;}
+  const gallery=document.getElementById('gallery');
+  gallery.classList.add('fade');
+  setTimeout(()=>{
+    activeFilter=id;
+    renderGallery();
+    updateUI();
+    updateFilterTag();
+    gallery.classList.remove('fade');
+  },120);
+}
+
+function clearFilter(){
+  if(activeFilter===null)return;
+  const gallery=document.getElementById('gallery');
+  gallery.classList.add('fade');
+  setTimeout(()=>{
+    activeFilter=null;
+    renderGallery();
+    updateUI();
+    updateFilterTag();
+    gallery.classList.remove('fade');
+  },120);
+}
+
+function updateFilterTag(){
+  const tag=document.getElementById('filterTag');
+  if(activeFilter){
+    const f=FILTERS.find(x=>x.id===activeFilter);
+    tag.style.display='flex';
+    document.getElementById('ftDot').style.background=f.color;
+    document.getElementById('ftLabel').textContent=f.label;
+  }else{
+    tag.style.display='none';
+  }
+}
+
+async function clearAll(){
+  if(!confirm('Удалить все изображения из галереи и из облака Supabase?'))return;
+  const ov=document.getElementById('loadOv');
+  const msg=document.getElementById('loadMsg');
+  ov.classList.remove('hidden');
+  msg.textContent='Удаление...';
+  try{
+    const paths=allImages.map(i=>i.storage_path).filter(Boolean);
+    if(paths.length)await db.storage.from(BUCKET).remove(paths);
+    // Удаляем все записи (используем is not null trick)
+    await db.from('images').delete().not('id','is',null);
+    allImages=[];
+    activeFilter=null;
+    renderGallery();
+    updateUI();
+    updateFilterTag();
+    toast('Галерея очищена','success','🗑️');
+  }catch(e){
+    toast('Ошибка: '+e.message,'error','❌');
+  }finally{
+    ov.classList.add('hidden');
+    msg.textContent='Загрузка галереи из облака...';
+  }
+}
+
+function toggleSidebar(){
+  sbOpen=!sbOpen;
+  document.getElementById('sidebar').classList.toggle('closed',!sbOpen);
+  document.getElementById('sbToggle').classList.toggle('active',sbOpen);
+}
+
+// ════════════════════════════════════════
+//  СТАРТ
+// ════════════════════════════════════════
+initFilterBtns();
+loadImages();
+</script>
+</body>
+</html>
